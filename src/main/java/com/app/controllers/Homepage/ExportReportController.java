@@ -494,10 +494,9 @@ public class ExportReportController {
                 contentStream.endText();
             }
 
-
             // Tạo thư mục reports nếu chưa tồn tại
             String projectDir = System.getProperty("user.dir");
-            Path reportsDir = Paths.get(projectDir, "src", "main", "resources", "reports");
+            Path reportsDir = Paths.get(projectDir, "src", "main", "resources", "output_reports");
             Files.createDirectories(reportsDir);
 
             // Lưu file PDF vào thư mục reports
