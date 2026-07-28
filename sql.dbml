@@ -1,0 +1,94 @@
+Table users {
+  id int [pk, increment]                  // ID người dùng, khóa chính, tự động tăng
+  email varchar(100) [not null, unique]   // Email đăng nhập, bắt buộc và duy nhất
+  username varchar(100) [not null]        // Tên đăng nhập, bắt buộc
+  password varchar(100) [not null]        // Mật khẩu mã hóa, bắt buộc
+  // role varchar(100) [not null, default: 'accountant']  // Quyền hạn người dùng (accountant, admin)
+  role enum('accountant', 'admin') [not null, default: 'accountant']  // Quyền hạn người dùng
+}
+
+Table rooms {
+  room_number varchar(20) [pk, not null, unique]    // Số căn hộ, bắt buộc và duy nhất
+  floor int [not null]                              // Tầng 
+  area float [not null]                             // Diện tích (m2)
+  // status varchar(100) [default: 'available']  // Trạng thái (available, occupied)
+  status enum('available', 'occupied') [default: 'available']  // Trạng thái căn hộ
+}
+
+Table residents {
+  id int [pk, increment]                                   // ID cư dân
+  full_name varchar(100) [not null]                        // Họ và tên
+  date_of_birth date [not null]                            // Ngày sinh
+  place_of_birth varchar(100) [not null]                   // Nơi sinh
+  ethnicity varchar(50) [not null]                         // Dân tộc
+  occupation varchar(100)                                  // Nghề nghiệp
+  hometown varchar(100) [not null]                         // Quê quán
+  id_card_number varchar(20) [unique]                      // Số CCCD/CMND
+  // residence_status varchar(20)                          // Loại cư trú: 'permanent', 'temporary'
+  residence_status enum('permanent', 'temporary')          // Loại cư trú
+  phone varchar(20)                                        // Số điện thoại
+  // gender varchar(10)                                    // Giới tính (male, female, other)
+  gender enum('male', 'female', 'other')                   // Giới tính
+  // relationship_to_owner varchar(50)                     // Quan hệ với chủ hộ (owner, spouse, parent, child, other)
+  relationship_to_owner enum('owner', 'spouse', 'parent', 'child', 'other') // Quan hệ với chủ hộ
+  room_number varchar(20) [not null, ref: > rooms.room_number] // Số căn hộ đang ở
+  status enum('living', 'moved_out') [default: 'active']   // Trạng thái (ở, chuyển đi)
+}
+
+Table revenue_items {
+  id int [pk, increment]                 // ID khoản thu, khóa chính, tự động tăng
+  name varchar(100) [not null]           // Tên khoản thu (ví dụ: "Tien Dien"), bắt buộc, duy nhất
+  code varchar(50) [not null, unique]
+  unit_price decimal(12,2) [not null]    // Giá đơn vị mặc định (có thể dùng để tính tiền)
+  quantity_unit varchar(50)              // Đơn vị
+  description text                       // Mô tả chi tiết về khoản thu (nếu cần)
+  // category varchar(50) [default: 'mandatory'] // Phân loại (bắt buộc (mandatory)/tự nguyện (voluntary))
+  category enum('mandatory', 'voluntary') [default: 'mandatory'] // Phân loại khoản thu
+  // status varchar(20) [default: 'active'] // Trạng thái khoản thu (active/inactive)
+  status enum('active', 'inactive') [default: 'active']         // Trạng thái khoản thu
+}
+
+Table payments {
+  id int [pk, increment]                                  // ID bản ghi thanh toán
+  room_number varchar(20) [ref: > rooms.room_number, not null] // Hộ thanh toán
+  collection_period_id int [ref: > collection_periods.id, not null] // Đợt thu được gắn
+  // amount decimal(12,2) [not null]                         // Số tiền đã thanh toán
+  paid_amount decimal(12,2) [not null]                    // Số tiền đã trả
+  debt_amount decimal(12,2) [default: 0.00]               // Số tiền nợ
+  excess_amount decimal(12,2) [default: 0.00]             // Số tiền thừa
+  payment_date date [not null]                            // Ngày thanh toán
+  note varchar(255)                                       // Ghi chú thêm nếu cần
+}
+
+Table collection_periods {
+  id int [pk, increment]                                // ID đợt thu, tự động tăng
+  name varchar(100) [not null]                          // Tên đợt thu (VD: "Thu tháng 6/2025")
+  start_date date [not null]                            // Ngày bắt đầu đợt thu
+  end_date date [not null]                              // Ngày kết thúc đợt thu
+  // type varchar(20) [default: 'monthly']                 // Loại đợt thu: monthly, quarterly, yearly
+  type enum('monthly', 'quarterly', 'yearly') [default: 'monthly']  // Loại đợt thu
+}
+
+Table collection_items {
+  id int [pk, increment]                                  // ID
+  collection_period_id int [ref: > collection_periods.id, not null]  // Đợt thu
+  room_number varchar(20) [ref: > rooms.room_number, not null]       // Hộ áp dụng
+  revenue_item_id int [ref: > revenue_items.id, not null]            // Khoản thu cụ thể
+  quantity decimal(12,2) [default: 1]                                // Số lượng áp dụng (m2, số xe, nhân khẩu,...)
+  quantity_unit varchar(20) [not null]                               // Đơn vị tính (m2, person, unit, ...)
+  unit_price decimal(12,2) [not null]                    // Đơn giá tại thời điểm thu
+  total_amount decimal(12,2) [not null]                  // Tổng tiền = quantity * unit_price
+  note varchar(255)                                      // Ghi chú thêm
+}
+
+Table vehicles {
+  id int [pk, increment]                                // ID phương tiện
+  room_number varchar(20) [ref: > rooms.room_number, not null]  // Căn hộ sở hữu
+  plate_number varchar(20) [not null, unique]           // Biển số xe (duy nhất)
+  type enum('motorbike', 'car') [not null]              // Loại phương tiện
+  brand varchar(50) [not null]                          // Hãng xe (Honda, Toyota, etc.)
+  color varchar(30) [not null]                          // Màu xe
+  registration_date date [not null]                     // Ngày đăng ký xe
+  is_active boolean [default: true]                     // Xe còn sử dụng không?
+  note varchar(255)                                     // Ghi chú nếu cần
+}
